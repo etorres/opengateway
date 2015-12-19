@@ -1,0 +1,15 @@
+language: java
+
+jdk:
+  - oraclejdk8
+
+sudo: false
+
+cache:
+  apt: true
+  directories:
+  - $HOME/.m2
+  - $HOME/.embedmongo
+
+after_success:
+  - mvn clean cobertura:cobertura coveralls:report
