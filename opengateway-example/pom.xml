@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+Open Gateway - Usage Examples.
+Copyright 2015-2016 GRyCAP (Universitat Politecnica de Valencia)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+This product combines work with different licenses. See the "NOTICE" text
+file for details on the various modules and licenses.
+
+The "NOTICE" text file is part of the distribution. Any derivative works
+that you distribute must include a readable copy of the "NOTICE" text file.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	
+	<parent>
+		<groupId>org.grycap.opengateway</groupId>
+		<artifactId>opengateway</artifactId>
+		<version>0.0.1</version>
+	</parent>
+	
+	<artifactId>opengateway-example</artifactId>
+	<name>Open gateway usage example</name>
+	<description>Provides usage examples that can serve as the basis to develop more complex services on top of the framework</description>
+	<url>https://github.com/grycap/opengateway</url>
+	
+	<dependencies>
+		<!-- GRyCAP common utilities -->
+		<dependency>
+			<groupId>org.grycap.coreutils</groupId>
+			<artifactId>coreutils-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		
+		<!-- GRyCAP open gateway -->
+		<dependency>
+			<groupId>org.grycap.opengateway</groupId>
+			<artifactId>opengateway-core</artifactId>
+			<version>${org.grycap.opengateway.version}</version>
+		</dependency>
+		
+		<!-- Vert.x -->
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-hazelcast</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-web</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-auth-oauth2</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-auth-shiro</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-mail-client</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-unit</artifactId>
+			<scope>test</scope>
+		</dependency>		
+	</dependencies>
+	
+	<profiles>
+		<profile>
+			<id>silent</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+		</profile>
+		<profile>
+			<id>verbose</id>
+			<activation>
+				<property>
+					<name>grycap.tests.print.out</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<!-- Maven Surefire Plugin -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<systemPropertyVariables>
+								<logback.configurationFile>${project.build.testOutputDirectory}/logback-test-tmpfile.xml</logback.configurationFile>
+							</systemPropertyVariables>
+						</configuration>
+					</plugin>
+					<!-- Maven Failsafe Plugin -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-failsafe-plugin</artifactId>
+						<configuration>
+							<systemPropertyVariables>
+								<logback.configurationFile>${project.build.testOutputDirectory}/logback-test-tmpfile.xml</logback.configurationFile>
+							</systemPropertyVariables>
+						</configuration>						
+					</plugin>					
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+	
+	<build>
+		<plugins>
+			<!-- Maven Surefire Plugin -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>				
+			</plugin>
+			<!-- Maven Failsafe Plugin -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>						
+			</plugin>
+			<!-- Package application into executable JAR -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>${maven-shade-plugin.version}</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>org.grycap.opengateway.example.AppDaemon</mainClass>
+									<manifestEntries>
+										<X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
+										<X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
+									</manifestEntries>
+								</transformer>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"></transformer>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+									<addHeader>false</addHeader>
+								</transformer>
+							</transformers>
+							<outputFile>${project.build.directory}/${project.artifactId}-${project.version}-uber.jar</outputFile>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>
