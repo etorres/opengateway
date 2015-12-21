@@ -30,3 +30,9 @@ An implementation of the Gateway API microservices pattern using Java technologi
 ## Continuous integration
 
 ``$ mvn clean verify opengateway``
+
+## TO-DO list
+
+1. Add more method to the class OgExpectationInitializer (POST, PUT, DELETE).
+2. Complete the classes: SecureRestServer and WebSocketsServer.
+3. Include two load-balancing connectors: a) Netflix Eureka-Ribbon; and b) Baker Street (HAProxy-based client side load balancer).

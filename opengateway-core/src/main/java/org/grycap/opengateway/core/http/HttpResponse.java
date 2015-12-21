@@ -37,7 +37,7 @@ import com.squareup.okhttp.Response;
  * An HTTP response. Instances of this class are not immutable: the response body is a one-shot value that may be consumed only once. 
  * All other properties are immutable.
  * @author Erik Torres <etserrano@gmail.com>
- * @since 0.1.0
+ * @since 0.0.1
  */
 public class HttpResponse {
 
@@ -47,14 +47,28 @@ public class HttpResponse {
 		this.response = response;		
 	}
 
-	public String string() {
-		String payload;
+	/**
+	 * Gets the body of the response entity (if any) as a UTF-8 encoded string.
+	 * @return The response entity (if any) as a UTF-8 encoded string.
+	 */
+	public String readUtf8() {
 		try {
-			payload = response.body().source().readUtf8();
+			return response.body().source().readUtf8();
 		} catch (Exception e) {
 			throw new IllegalStateException("Failed to parse body", e);
 		}
-		return payload;
+	}
+
+	/**
+	 * Gets the body of the response entity (if any) as an array of bytes.
+	 * @return The response entity (if any) as an array of bytes.
+	 */
+	public byte[] readByteArray() {
+		try {
+			return response.body().source().readByteArray();
+		} catch (IOException e) {
+			throw new IllegalStateException("Failed to read body", e);
+		}
 	}
 
 	/**
@@ -64,13 +78,11 @@ public class HttpResponse {
 	 */
 	public <T> T fromString(final Function<String, T> converter) {
 		requireNonNull(converter, "A valid converted expected");
-		T obj;
 		try {
-			obj = response.body() != null ? converter.apply(response.body().source().readUtf8()) : null;
+			return response.body() != null ? converter.apply(response.body().source().readUtf8()) : null;
 		} catch (Exception e) {
 			throw new IllegalStateException("Failed to convert body", e);
 		}
-		return obj;
 	}
 
 	/**

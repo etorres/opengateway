@@ -40,6 +40,7 @@ import org.grycap.coreutils.test.rules.TestPrinter;
 import org.grycap.coreutils.test.rules.TestWatcher2;
 import org.grycap.opengateway.core.OgDaemon;
 import org.grycap.opengateway.core.VertxService;
+import org.grycap.opengateway.core.loadbalancer.SingleNodeLoadBalancer;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -131,7 +132,7 @@ public class BootTest {
 			final VertxOptions vertxOptions = createVertxOptions(clustered);		
 			final DeploymentOptions deploymentOptions = createDeploymentOptions();
 			// configure and start the service manager
-			serviceManager = new ServiceManager(newHashSet(new VertxService(newArrayList(), vertxOptions, deploymentOptions)));		
+			serviceManager = new ServiceManager(newHashSet(new VertxService(newArrayList(), vertxOptions, deploymentOptions, new SingleNodeLoadBalancer())));		
 			super.init(daemonContext);
 		}
 

@@ -23,15 +23,18 @@
 
 package org.grycap.opengateway.core.http;
 
+import static io.vertx.core.buffer.Buffer.buffer;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.Objects;
+import java.util.function.Function;
 
+import org.grycap.opengateway.core.http.RestServiceConfig.ApiConfig;
+import org.grycap.opengateway.core.loadbalancer.BalanceableService;
 import org.grycap.opengateway.core.loadbalancer.LoadBalancerClient;
-import org.grycap.opengateway.core.loadbalancer.SingleNodeLoadBalancer;
 import org.slf4j.Logger;
 
 import io.vertx.core.AbstractVerticle;
@@ -51,26 +54,32 @@ import io.vertx.ext.web.handler.StaticHandler;
  * @author Erik Torres <etserrano@gmail.com>
  * @since 0.0.1
  */
-public abstract class BaseRestService extends AbstractVerticle {
+public abstract class BaseRestService extends AbstractVerticle implements BalanceableService {
 
 	protected Logger logger;
 	protected RestServiceConfig serviceConfig;
 	protected LoadBalancerClient loadBalancerClient;
+	protected Function<JsonObject, JsonObject> converter = null;
 
 	private final static long MAX_BODY_SIZE_MIB = 8; // 8 MiB
 
 	@Override
+	public LoadBalancerClient getLoadBalancer() {
+		return loadBalancerClient;
+	}
+
+	@Override
+	public void setLoadBalancer(final LoadBalancerClient loadBalancerClient) {
+		this.loadBalancerClient = loadBalancerClient;
+	}	
+
+	@Override
 	public void start() throws Exception {
-		// setup load balancer
-		switch (config().getString("load-balancer.strategy")) {
-		case "single-node":			
-		default:
-			loadBalancerClient = new SingleNodeLoadBalancer();
-			break;
-		}
+		requireNonNull(serviceConfig, "A valid service configuration expected");
+		requireNonNull(loadBalancerClient, "A valid load balancer client expected");		
+		// set body limit and create router
+		final long maxBodySize = context.config().getLong("http-server.max-body-size", MAX_BODY_SIZE_MIB) * 1024l * 1024l;
 		final Router router = Router.router(vertx);
-		// set body limit
-		final long maxBodySize = context.config().getLong("http-server.max-body-size", MAX_BODY_SIZE_MIB) * 1024l * 1024l;		
 		router.route().handler(BodyHandler.create().setBodyLimit(maxBodySize));
 		// enable CORS
 		router.route().handler(CorsHandler.create("*")
@@ -81,16 +90,16 @@ public abstract class BaseRestService extends AbstractVerticle {
 				.allowedMethod(HttpMethod.OPTIONS)
 				.allowedHeader("Content-Type")
 				.allowedHeader("Authorization"));
-		// configure index page
+		// configure index page		
 		router.route(serviceConfig.getFrontpage().orElse("/")).handler(StaticHandler.create());
 		// serve resources
 		serviceConfig.getServices().values().stream().forEach(s -> {
 			final String path = requireNonNull(s.getPath(), "A valid path required");
-			router.get(String.format("%s/:id", path)).produces("application/json").handler(this::handleGet);
-			router.get(path).produces("application/json").handler(this::handleList);
-			router.post(path).handler(this::handleCreate);
-			router.put(String.format("%s/:id", path)).consumes("application/json").handler(this::handleModify);
-			router.delete(String.format("%s/:id", path)).handler(this::handleDelete);
+			router.get(String.format("%s/:id", path)).produces("application/json").handler(e -> handleGet(s, e));
+			router.get(path).produces("application/json").handler(e -> handleList(s, e));
+			router.post(path).handler(e -> handleCreate(s, e));
+			router.put(String.format("%s/:id", path)).consumes("application/json").handler(e -> handleModify(s, e));
+			router.delete(String.format("%s/:id", path)).handler(e -> handleDelete(s, e));
 		});
 		// start HTTP server
 		final int port = context.config().getInteger("http.port", 8080);		
@@ -98,13 +107,13 @@ public abstract class BaseRestService extends AbstractVerticle {
 		logger.trace("New instance created: [id=" + context.deploymentID() + "].");
 	}
 
-	private void handleGet(final RoutingContext routingContext) {
+	private void handleGet(final ApiConfig api, final RoutingContext routingContext) {
 		final String id = routingContext.request().getParam("id");
 		final HttpServerResponse response = routingContext.response();
 		if (id == null) {
 			sendError(400, response);
 		} else {
-			final String service = loadBalancerClient.getServiceInstance(serviceConfig.getAppId());
+			final String service = loadBalancerClient.getServiceInstance(api.getAppId());
 			if (isBlank(service)) {
 				sendError(503, response);
 			} else {
@@ -112,21 +121,16 @@ public abstract class BaseRestService extends AbstractVerticle {
 					if (!resp.succeeded()) {
 						sendError(504, response);
 					} else {
-						final JsonObject jsonObj = resp.result().fromString(r -> new JsonObject(r));
-						if (jsonObj == null) {
-							sendError(404, response);
-						} else {							
-							response.putHeader("content-type", "application/json").end(jsonObj.encode());
-						}
+						convertSend(resp.result(), response);
 					}
 				});
 			}
 		}
 	}
 
-	private void handleList(final RoutingContext routingContext) {
+	private void handleList(final ApiConfig api, final RoutingContext routingContext) {
 		final HttpServerResponse response = routingContext.response();		
-		final String service = loadBalancerClient.getServiceInstance(serviceConfig.getAppId());
+		final String service = loadBalancerClient.getServiceInstance(api.getAppId());
 		if (isBlank(service)) {
 			sendError(503, response);
 		} else {
@@ -134,24 +138,19 @@ public abstract class BaseRestService extends AbstractVerticle {
 				if (!resp.succeeded()) {
 					sendError(504, response);
 				} else {
-					final JsonObject jsonObj = resp.result().fromString(r -> new JsonObject(r));
-					if (jsonObj == null) {
-						sendError(404, response);
-					} else {
-						response.putHeader("content-type", "application/json").end(jsonObj.encode());
-					}
+					convertSend(resp.result(), response);
 				}
 			});
 		}
 	}
 
-	private void handleCreate(final RoutingContext routingContext) {
+	private void handleCreate(final ApiConfig api, final RoutingContext routingContext) {
 		final Buffer buffer = routingContext.getBody();		
 		final HttpServerResponse response = routingContext.response();
 		if (buffer == null) {
 			sendError(400, response);
 		} else {
-			final String service = loadBalancerClient.getServiceInstance(serviceConfig.getAppId());
+			final String service = loadBalancerClient.getServiceInstance(api.getAppId());
 			if (isBlank(service)) {
 				sendError(503, response);
 			} else {
@@ -168,14 +167,14 @@ public abstract class BaseRestService extends AbstractVerticle {
 		}		
 	}
 
-	private void handleModify(final RoutingContext routingContext) {
+	private void handleModify(final ApiConfig api, final RoutingContext routingContext) {
 		final String id = routingContext.request().getParam("id");
 		final Buffer buffer = routingContext.getBody();
 		final HttpServerResponse response = routingContext.response();
 		if (id == null || buffer == null) {
 			sendError(400, response);
-		} else {
-			final String service = loadBalancerClient.getServiceInstance(serviceConfig.getAppId());
+		} else {			
+			final String service = loadBalancerClient.getServiceInstance(api.getAppId());
 			if (isBlank(service)) {
 				sendError(503, response);
 			} else {
@@ -190,13 +189,13 @@ public abstract class BaseRestService extends AbstractVerticle {
 		}
 	}
 
-	private void handleDelete(final RoutingContext routingContext) {
+	private void handleDelete(final ApiConfig api, final RoutingContext routingContext) {
 		final String id = routingContext.request().getParam("id");
 		final HttpServerResponse response = routingContext.response();
 		if (id == null) {
 			sendError(400, response);
 		} else {
-			final String service = loadBalancerClient.getServiceInstance(serviceConfig.getAppId());
+			final String service = loadBalancerClient.getServiceInstance(api.getAppId());
 			if (isBlank(service)) {
 				sendError(503, response);
 			} else {
@@ -213,6 +212,24 @@ public abstract class BaseRestService extends AbstractVerticle {
 
 	private void sendError(final int statusCode, final HttpServerResponse response) {
 		response.setStatusCode(statusCode).end();
+	}
+
+	private void convertSend(final HttpResponse aux, final HttpServerResponse response) {
+		if (converter != null) {
+			final JsonObject jsonObj = aux.fromString(r -> new JsonObject(r));
+			if (jsonObj == null) {
+				sendError(404, response);
+			} else {
+				response.putHeader("content-type", "application/json").end(ofNullable(converter.apply(jsonObj)).orElse(new JsonObject()).encode());
+			}
+		} else {
+			final Buffer buffer = buffer(aux.readByteArray());
+			if (buffer.length() == 0) {
+				sendError(404, response);
+			} else {
+				response.putHeader("content-type", "application/json").end(buffer);
+			}
+		}
 	}
 
 }

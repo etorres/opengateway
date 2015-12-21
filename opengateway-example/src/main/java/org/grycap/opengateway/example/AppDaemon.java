@@ -32,6 +32,8 @@ import org.apache.commons.daemon.DaemonContext;
 import org.apache.commons.daemon.DaemonController;
 import org.grycap.opengateway.core.OgDaemon;
 import org.grycap.opengateway.core.VertxService;
+import org.grycap.opengateway.core.loadbalancer.LoadBalancerClient;
+import org.grycap.opengateway.core.loadbalancer.SingleNodeLoadBalancer;
 
 import com.google.common.util.concurrent.ServiceManager;
 
@@ -98,12 +100,16 @@ public class AppDaemon extends OgDaemon {
 		}
 		// load configuration properties
 		loadConfigOptions(cmd);
+		// create load balancer (a real implementation of the load balancer should be used in production)
+		final LoadBalancerClient loadBalancerClient = new SingleNodeLoadBalancer()
+				.addService("opengateway-example.product.v1", "http://localhost:9080/products")
+				.addService("opengateway-example.shipping.v1", "http://localhost:9080/shipping");
 		// create service options from configuration
 		final VertxOptions vertxOptions = createVertxOptions(true);		
 		final DeploymentOptions deploymentOptions = createDeploymentOptions();
 		// configure and start the service manager
 		serviceManager = new ServiceManager(newHashSet(new VertxService(newArrayList(SimpleRestServer.class, SecureRestServer.class, WebSocketsServer.class), 
-				vertxOptions, deploymentOptions)));		
+				vertxOptions, deploymentOptions, loadBalancerClient)));
 		super.init(daemonContext);
 	}
 

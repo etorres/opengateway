@@ -23,10 +23,13 @@
 
 package org.grycap.opengateway.example.test;
 
+import static com.google.common.collect.ImmutableList.of;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.grycap.coreutils.fiber.http.Http2Client.getHttp2Client;
 import static org.grycap.coreutils.logging.LogManager.getLogManager;
+import static org.grycap.opengateway.example.test.mockserver.ProductCatalogService.getProducts;
+import static org.grycap.opengateway.example.test.mockserver.ShippingService.getShipping;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
@@ -34,30 +37,42 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.number.OrderingComparison.greaterThan;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.daemon.DaemonContext;
 import org.apache.commons.daemon.DaemonController;
 import org.apache.http.client.utils.URIBuilder;
-import org.grycap.coreutils.test.category.FunctionalTests;
+import org.grycap.coreutils.test.category.IntegrationTests;
 import org.grycap.coreutils.test.rules.TestPrinter;
 import org.grycap.coreutils.test.rules.TestWatcher2;
 import org.grycap.opengateway.core.OgDaemon;
 import org.grycap.opengateway.example.AppDaemon;
-import org.junit.After;
-import org.junit.Before;
+import org.grycap.opengateway.example.test.mockserver.Product;
+import org.grycap.opengateway.example.test.mockserver.Shipping;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
+import com.google.gson.Gson;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.Headers;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
+import io.vertx.ext.unit.junit.VertxUnitRunnerWithParametersFactory;
 import net.jodah.concurrentunit.Waiter;
 
 /**
@@ -65,12 +80,14 @@ import net.jodah.concurrentunit.Waiter;
  * @author Erik Torres <etserrano@gmail.com>
  * @since 0.0.1
  */
-@Category(FunctionalTests.class)
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(VertxUnitRunnerWithParametersFactory.class)
+@Category(IntegrationTests.class)
 public class AppDaemonTest {
 
-	private int port = 8080;
-	private String uri;
-	private OgDaemon daemon;
+	private static final int port = 8080;
+	private static String uri;
+	private static OgDaemon daemon;
 
 	@Rule
 	public TestPrinter pw = new TestPrinter();
@@ -78,14 +95,30 @@ public class AppDaemonTest {
 	@Rule
 	public TestRule watchman = new TestWatcher2(pw);
 
-	@BeforeClass
-	public static void setup() {
-		// install bridges to logging APIs in order to capture Hazelcast and Vert.x messages
-		getLogManager().init();
+	/**
+	 * Provides an input dataset to test the different scenarios.
+	 * @return Parameters for the different test scenarios.
+	 */
+	@Parameters(name = "{index}: method={0}, path={1}, code={2}, ids={3}")
+	public static Collection<Object[]> data() {
+		return Arrays.asList(new Object[][] {
+			/* 0*/ // { "GET", "simple-rest/v1/products", 200, of("P001", "P002", "P003", "P004", "P005") }, 
+			/* 1*/ { "GET", "simple-rest/v1/shipping", 200, of("S001", "S002", "S003") }, 
+			/* 2*/ //{ "GET", "simple-rest/v1/products", 200, null },
+			/* 3*/ //{ "GET", "simple-rest/v1/shipping", 200, null }
+		});
 	}
 
-	@Before
-	public void setUp() throws Exception {
+	@Parameter(value = 0) public String method;
+	@Parameter(value = 1) public String path;
+	@Parameter(value = 2) public int code;
+	@Parameter(value = 3) public List<String> ids;
+
+	@BeforeClass
+	public static void setUp() throws Exception {
+		// install bridges to logging APIs in order to capture Hazelcast and Vert.x messages
+		getLogManager().init();
+		// start the daemon
 		daemon = new AppDaemon();
 		daemon.init(new DaemonContext() {			
 			@Override
@@ -99,68 +132,93 @@ public class AppDaemonTest {
 		});
 		daemon.start();
 		daemon.awaitHealthy(30l, TimeUnit.SECONDS);
-		uri = "http://localhost:" + port + "/";
-	}
-
-	@After
-	public void cleanUp() throws Exception {
-		daemon.stop();
-		daemon.destroy();
-	}
-
-	@Test
-	public void test() throws Exception {
+		uri = "http://localhost:" + port;
+		// test that the server started
 		final Waiter waiter = new Waiter();
-
-		// Thread.sleep(300000l); // TODO
-		
-		// test index page
-		getHtml("", waiter);
-
-		// test get object
-		getJson("simple-rest/v1/product/21", waiter);
-
-		// TODO
-
-		waiter.await(30l, TimeUnit.SECONDS, 2);
-	}
-
-	private void getHtml(final String path, final Waiter waiter) throws URISyntaxException, IOException {
-		get(path, "text/html", waiter);
-	}
-
-	private void getJson(final String path, final Waiter waiter) throws URISyntaxException, IOException {
-		get(path, "application/json", waiter);		
-	}
-
-	private void get(final String path, final String mimeType, final Waiter waiter) throws URISyntaxException, IOException {
-		final URIBuilder uriBuilder = new URIBuilder(uri + path);
-		getHttp2Client().asyncGet(uriBuilder.build().toURL().toString(), newArrayList(mimeType), false, new Callback() {			
+		getHttp2Client().asyncGet(uri, newArrayList("text/html"), false, new Callback() {			
 			@Override
 			public void onResponse(final Response response) throws IOException {
-				
-				// TODO
-				System.err.println("\n\n >> RESPONSE: " + response + "\n");
-				// TODO
-				
-				waiter.assertTrue(response.isSuccessful());				
-				// assert response headers				
-				final Headers headers = response.headers();
-				waiter.assertNotNull(headers);
-				waiter.assertNotNull(headers.names());
-				waiter.assertThat(headers.names().size(), greaterThan(0));
-				// assert response body
+				waiter.assertTrue(response.isSuccessful());	
 				waiter.assertThat(response.body().contentLength(), greaterThan(0l));
 				final String payload = response.body().source().readUtf8();
 				waiter.assertThat(payload, allOf(notNullValue(), not(equalTo(""))));
-				pw.println(" >> Response: " + abbreviate(payload, 64));
-				waiter.resume();			
+				waiter.resume();
 			}
 			@Override
 			public void onFailure(final Request request, final IOException throwable) {
 				waiter.fail(throwable);
 			}
 		});
+		waiter.await(30l, TimeUnit.SECONDS);
+	}
+
+	@AfterClass
+	public static void cleanUp() throws Exception {
+		daemon.stop();
+		daemon.destroy();
+	}
+
+	@Test
+	public void testResources() throws Exception {
+
+		// TODO Thread.sleep(120000l);
+
+		final Waiter waiter = new Waiter();
+		int count = 1;
+		if ("GET".equals(method)) {
+			if (ids != null && !ids.isEmpty()) {
+				count = ids.size();
+				for (final String id : ids) {
+					testGetObject(id, waiter);
+				}				
+			} else {
+				testGetList(waiter);
+			}
+		}
+		// TODO : add more tests here
+		waiter.await(30l, TimeUnit.SECONDS, count);
+	}
+
+	private void testGetObject(final String id, final Waiter waiter) throws URISyntaxException, MalformedURLException {
+		final URIBuilder uriBuilder = new URIBuilder(String.format("%s/%s/%s", uri, path, id));
+		getHttp2Client().asyncGet(uriBuilder.build().toURL().toString(), newArrayList("application/json"), false, new Callback() {			
+			@Override
+			public void onResponse(final Response response) throws IOException {
+				waiter.assertTrue(response.isSuccessful());
+				// check response headers
+				final Headers headers = response.headers();
+				waiter.assertNotNull(headers);
+				waiter.assertNotNull(headers.names());
+				waiter.assertThat(headers.names().size(), greaterThan(0));
+				// check response body
+				waiter.assertThat(response.body().contentLength(), greaterThan(0l));
+				final String payload = response.body().source().readUtf8();
+				waiter.assertThat(payload, allOf(notNullValue(), not(equalTo(""))));
+				pw.println(" >> Abbreviated response: " + abbreviate(payload, 64));
+				// parse and check
+				final Gson gson = new Gson();
+				if (path.contains("products")) {
+					final Product product = gson.fromJson(payload, Product.class);
+					waiter.assertNotNull(product);
+					waiter.assertThat(product, allOf(notNullValue(), equalTo(getProducts().get(id))));
+					pw.println(" >> Object response: " + product);
+				} else if (path.contains("shipping")) {
+					final Shipping shipping = gson.fromJson(payload, Shipping.class);
+					waiter.assertNotNull(shipping);
+					waiter.assertThat(shipping, allOf(notNullValue(), equalTo(getShipping().get(id))));
+					pw.println(" >> Object response: " + shipping);
+				}				
+				waiter.resume();
+			}
+			@Override
+			public void onFailure(final Request request, final IOException throwable) {
+				waiter.fail(throwable);
+			}
+		});
+	}
+
+	private void testGetList(final Waiter waiter) {
+		// TODO getProducts().values()
 	}
 
 }

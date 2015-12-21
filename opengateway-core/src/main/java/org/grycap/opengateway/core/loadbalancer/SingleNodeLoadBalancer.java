@@ -48,10 +48,17 @@ public class SingleNodeLoadBalancer implements LoadBalancerClient {
 	public final String SINGLE_NODE_REGISTRY = "SingleNodeServiceRegistry";
 
 	private final ListMultimap<String, String> registry = ArrayListMultimap.create();
+	
+	public SingleNodeLoadBalancer addService(final String appId, final String url) {
+		final String appId2 = requireNonNull(trimToNull(appId), "A non-empty identifier expected");
+		final String url2 = requireNonNull(trimToNull(url), "A non-empty URL expected");
+		registry.put(appId2, url2);
+		return this;
+	}
 
 	@Override @Nullable
 	public List<String> query(final String serviceRegistry, final String appId) {
-		final String appId2 = requireNonNull(trimToNull(appId));
+		final String appId2 = requireNonNull(trimToNull(appId), "A non-empty identifier expected");
 		return SINGLE_NODE_REGISTRY.equals(serviceRegistry) ? registry.get(appId2) : null;		
 	}
 
@@ -62,7 +69,7 @@ public class SingleNodeLoadBalancer implements LoadBalancerClient {
 
 	@Override @Nullable
 	public String getServiceInstance(final String serviceRegistry, final String appId) {
-		final String appId2 = requireNonNull(trimToNull(appId));
+		final String appId2 = requireNonNull(trimToNull(appId), "A non-empty identifier expected");
 		return SINGLE_NODE_REGISTRY.equals(serviceRegistry) ? ofNullable(registry.get(appId2)).orElse(emptyList()).stream().findAny().orElse(null) : null;
 	}
 

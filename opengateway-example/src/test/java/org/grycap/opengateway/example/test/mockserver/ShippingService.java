@@ -21,27 +21,27 @@
  * that you distribute must include a readable copy of the "NOTICE" text file.
  */
 
-package org.grycap.opengateway.example.services;
+package org.grycap.opengateway.example.test.mockserver;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import org.grycap.opengateway.example.models.Shipping;
 
 /**
  * Provides information about shipping options.
  * @author Erik Torres <etserrano@gmail.com>
  * @since 0.0.1
  */
-public class ShippingService {
+public final class ShippingService {
 
 	private static Map<String, Shipping> dataset = new HashMap<>();
 	static {
-		dataset.put("Post Service", new Shipping("Post Service", 7, 0.50, "Unsafe and unreliable", new char[]{ 'E', 'S' }));
-		dataset.put("Package Delivery Company", new Shipping("Package Delivery Company", 3, 23.0, "Fast but expensive", new char[]{ 'E', 'S' }));
-		dataset.put("International Shipping Agency", new Shipping("International Shipping Agency", 14, 51.0, "The only choice", new char[]{ 'U', 'S' }));
+		dataset.put("S001", new Shipping("S001", "Post Service", 7, 0.50, "Unsafe and unreliable", new char[]{ 'E', 'S' }));
+		dataset.put("S002", new Shipping("S002", "Package Delivery Company", 3, 23.0, "Fast but expensive", new char[]{ 'E', 'S' }));
+		dataset.put("S003", new Shipping("S003", "International Shipping Agency", 14, 51.0, "The only choice", new char[]{ 'U', 'S' }));
 	}
 
-	// TODO
+	public static Map<String, Shipping> getShipping() {
+		return dataset;
+	}
 
 }

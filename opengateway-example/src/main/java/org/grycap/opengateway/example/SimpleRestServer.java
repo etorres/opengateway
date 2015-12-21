@@ -39,10 +39,17 @@ import com.google.common.collect.ImmutableMap;
  */
 public class SimpleRestServer extends BaseRestService {
 
+	/**
+	 * Convenient constructor to add the service configuration to this server. In this example, two different resources are combined in the
+	 * same API: product and shipping. The endpoint where the resources are served will be discovered from the service registry via the load
+	 * balancer. This class only needs to know about the identifier of the services in the catalog (e.g <tt>opengateway-example.product.v1</tt>)
+	 * and the local path where the API will be served in this application (e.g <tt>/simple-rest/v1/product</tt>).
+	 */
 	public SimpleRestServer() {
 		logger = getLogger(SimpleRestServer.class);
 		serviceConfig = getRestServiceConfig(new ImmutableMap.Builder<String, ApiConfig>()
-				.put("OpengatewaySimpleRestExampleV1", new ApiConfig("OpengatewaySimpleRestExampleV1", "simple-rest/v1"))
+				.put("opengateway-example.product.v1", new ApiConfig("opengateway-example.product.v1", "/simple-rest/v1/products"))
+				.put("opengateway-example.shipping.v1", new ApiConfig("opengateway-example.shipping.v1", "/simple-rest/v1/shipping"))
 				.build(), null);		
 	}
 

@@ -21,10 +21,13 @@
  * that you distribute must include a readable copy of the "NOTICE" text file.
  */
 
-package org.grycap.opengateway.example.models;
+package org.grycap.opengateway.example.test.mockserver;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Optional.ofNullable;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -91,6 +94,35 @@ public class Product {
 
 	public void setCountryCode(final char[] countryCode) {
 		this.countryCode = countryCode;
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (obj == null || !(obj instanceof Product)) {
+			return false;
+		}
+		final Product other = Product.class.cast(obj);
+		return Objects.equals(code, other.code)
+				&& Objects.equals(name, other.name)
+				&& Objects.equals(description.orElse(null), other.description.orElse(null))
+				&& Objects.equals(price, other.price)
+				&& Arrays.equals(countryCode, other.countryCode);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(code, name, description, price, countryCode);
+	}
+
+	@Override
+	public String toString() {
+		return toStringHelper(this)
+				.add("code", code)
+				.add("name", name)
+				.add("description", description)
+				.add("price", price)
+				.add("countryCode", countryCode)
+				.toString();
 	}
 
 }

@@ -26,6 +26,7 @@ package org.grycap.opengateway.core;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
+import static org.grycap.opengateway.core.vertx.OgVerticleFactory.OG_VERTICLE_FACTORY_PREFIX;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.List;
@@ -38,6 +39,8 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
+import org.grycap.opengateway.core.loadbalancer.LoadBalancerClient;
+import org.grycap.opengateway.core.vertx.OgVerticleFactory;
 import org.slf4j.Logger;
 
 import com.google.common.util.concurrent.AbstractIdleService;
@@ -63,6 +66,7 @@ public class VertxService extends AbstractIdleService {
 
 	private final VertxOptions vertxOptions;
 	private final DeploymentOptions deploymentOptions;
+	private final LoadBalancerClient loadBalancerClient;
 
 	private Vertx vertx;
 
@@ -75,16 +79,18 @@ public class VertxService extends AbstractIdleService {
 	 * @param vertxOptions - general configuration properties
 	 * @param deploymentOptions - configuration properties affecting the deployment
 	 */
-	public VertxService(final List<Class<?>> verticles, final @Nullable VertxOptions vertxOptions, final @Nullable DeploymentOptions deploymentOptions) {
+	public VertxService(final List<Class<?>> verticles, final @Nullable VertxOptions vertxOptions, final @Nullable DeploymentOptions deploymentOptions,
+			final LoadBalancerClient loadBalancerClient) {
 		this.verticles = requireNonNull(verticles, "Verticles list expected.");
 		this.vertxOptions = ofNullable(vertxOptions).orElse(new VertxOptions());
 		this.deploymentOptions = ofNullable(deploymentOptions).orElse(new DeploymentOptions());
+		this.loadBalancerClient = requireNonNull(loadBalancerClient, "A valid load balancer expected");		
 	}
 
 	@Override
 	protected void startUp() throws Exception {
 		final AtomicBoolean success = new AtomicBoolean(true);
-		final Consumer<Vertx> runner = vertx -> verticles.stream().forEach(ver -> vertx.deployVerticle(ver.getCanonicalName(), deploymentOptions, res -> {
+		final Consumer<Vertx> runner = vertx -> verticles.stream().forEach(ver -> vertx.deployVerticle(verticleName(ver), deploymentOptions, res -> {			
 			if (res == null || !res.succeeded()) {
 				success.set(false);				
 				if (res != null) LOGGER.error(String.format("Failed to deploy verticle [type=%s].", ver.getSimpleName()), res.cause());				
@@ -109,12 +115,16 @@ public class VertxService extends AbstractIdleService {
 			Vertx.clusteredVertx(vertxOptions, res -> {
 				if (res.succeeded()) {
 					vertx = res.result();
+					vertx.registerVerticleFactory(new OgVerticleFactory(loadBalancerClient));
+					// TODO
 					runner.accept(vertx);
 				} else LOGGER.error("Failed to start Vert.x system.", res.cause());
 				future.complete(null);
 			});
 		} else {
 			vertx = Vertx.vertx(vertxOptions);
+			vertx.registerVerticleFactory(new OgVerticleFactory(loadBalancerClient));
+			// TODO
 			runner.accept(vertx);
 			future.complete(null);
 		}
@@ -137,6 +147,10 @@ public class VertxService extends AbstractIdleService {
 				else LOGGER.info("Exited with error.", res.cause());
 			} else LOGGER.info("Exited with error. Unknown cause.");
 		});
+	}
+
+	public static String verticleName(final Class<?> clazz) {
+		return String.format("%s:%s", OG_VERTICLE_FACTORY_PREFIX, clazz.getCanonicalName());
 	}
 
 }

@@ -58,7 +58,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunnerWithParametersFactory;
 /**
  * Tests the {@link VertxHttp2Client}.
  * @author Erik Torres <etserrano@gmail.com>
- * @since @since 0.0.1
+ * @since 0.0.1
  */
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(VertxUnitRunnerWithParametersFactory.class)
@@ -160,7 +160,7 @@ public class VertxHttp2ClientTest {
 				context.assertNotNull(objectId2, "Object id is not empty");
 				context.assertEquals(objectId, objectId2, "Object id coincides with expected");
 			} else {
-				context.assertEquals(body, resp.result().string(), "Body coincides with expected");
+				context.assertEquals(body, resp.result().readUtf8(), "Body coincides with expected");
 			}
 			async.complete();
 		});
@@ -176,7 +176,7 @@ public class VertxHttp2ClientTest {
 		} else supplier = () -> "plain text";
 		client.asyncPost("http://localhost:9080" + path, requestContentType, supplier, resp -> {
 			context.assertTrue(resp.succeeded(), "Request succeeded");
-			context.assertEquals(body, resp.result().string(), "Body coincides with expected");
+			context.assertEquals(body, resp.result().readUtf8(), "Body coincides with expected");
 			async.complete();
 		});
 	}

@@ -21,10 +21,13 @@
  * that you distribute must include a readable copy of the "NOTICE" text file.
  */
 
-package org.grycap.opengateway.example.models;
+package org.grycap.opengateway.example.test.mockserver;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Optional.ofNullable;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -34,6 +37,7 @@ import java.util.Optional;
  */
 public class Shipping {
 
+	private String code;
 	private String provider;
 	private int days;
 	private double price;
@@ -42,12 +46,21 @@ public class Shipping {
 
 	public Shipping() { }
 
-	public Shipping(final String provider, final int days, final double price, final String observations, final char[] countryCode) {
+	public Shipping(final String code, final String provider, final int days, final double price, final String observations, final char[] countryCode) {
+		this.code = code;
 		this.provider = provider;
 		this.days = days;
 		this.price = price;
 		this.observations = ofNullable(observations);
 		this.countryCode = countryCode;
+	}
+
+	public String getCode() {
+		return code;
+	}
+
+	public void setCode(final String code) {
+		this.code = code;
 	}
 
 	public String getProvider() {
@@ -87,6 +100,37 @@ public class Shipping {
 
 	public void setCountryCode(final char[] countryCode) {
 		this.countryCode = countryCode;
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (obj == null || !(obj instanceof Shipping)) {
+			return false;
+		}
+		final Shipping other = Shipping.class.cast(obj);
+		return Objects.equals(code, other.code)
+				&& Objects.equals(provider, other.provider)
+				&& Objects.equals(days, other.days)
+				&& Objects.equals(price, other.price)
+				&& Objects.equals(observations.orElse(null), other.observations.orElse(null))
+				&& Arrays.equals(countryCode, other.countryCode);		
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(code, provider, days, price, observations, countryCode);
+	}
+
+	@Override
+	public String toString() {
+		return toStringHelper(this)
+				.add("code", code)
+				.add("provider", provider)
+				.add("days", days)
+				.add("price", price)
+				.add("observations", observations)
+				.add("countryCode", countryCode)
+				.toString();
 	}
 
 }

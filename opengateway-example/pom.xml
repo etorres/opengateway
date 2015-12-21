@@ -81,7 +81,20 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-unit</artifactId>
 			<scope>test</scope>
-		</dependency>		
+		</dependency>
+		
+		<!-- MockServer -->
+		<dependency>
+            <groupId>org.mock-server</groupId>
+            <artifactId>mockserver-integration-testing</artifactId>
+            <scope>test</scope>
+            <exclusions>
+            	<exclusion> <!-- Prevent SLF4J from complaining about multiple appenders -->
+            		<groupId>ch.qos.logback</groupId>
+            		<artifactId>logback-classic</artifactId>
+            	</exclusion>
+            </exclusions>
+        </dependency>
 	</dependencies>
 	
 	<profiles>
@@ -127,7 +140,45 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 	</profiles>
 	
 	<build>
+		<pluginManagement>
+			<plugins>
+				<!-- Prevent Eclipse from executing unnecessary plugins during development -->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>${m2e.lifecycle-mapping.version}</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>														
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.mock-server</groupId>
+										<artifactId>mockserver-maven-plugin</artifactId>
+										<versionRange>[${mockserver-maven-plugin.version},)</versionRange>
+										<goals>
+											<goal>start</goal>
+											<goal>stop</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>								
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
+			<!-- MockServer Plugin -->
+			<plugin>
+                <groupId>org.mock-server</groupId>
+                <artifactId>mockserver-maven-plugin</artifactId>
+                <configuration>
+                	<initializationClass>org.grycap.opengateway.example.test.mockserver.OgExpectationInitializer</initializationClass>
+                </configuration>
+            </plugin>
 			<!-- Maven Surefire Plugin -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

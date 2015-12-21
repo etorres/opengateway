@@ -242,7 +242,6 @@ public abstract class OgDaemon implements Daemon {
 		verticleConfig.put("cluster.secret", config.getString("opengateway.cluster.secret"));
 		verticleConfig.put("cluster.network", config.getString("opengateway.cluster.network"));
 		verticleConfig.put("cluster.public-address", config.getString("opengateway.cluster.public-address"));
-		verticleConfig.put("load-balancer.strategy", config.getString("opengateway.load-balancer.strategy"));
 		// create deployment options
 		return new DeploymentOptions()
 				.setInstances(config.getInt("opengateway.http-server.instances"))
