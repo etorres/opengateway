@@ -26,7 +26,7 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 	<modelVersion>4.0.0</modelVersion>
 	
 	<parent>
-		<groupId>org.grycap.opengateway</groupId>
+		<groupId>es.upv.grycap.opengateway</groupId>
 		<artifactId>opengateway</artifactId>
 		<version>0.0.1</version>
 	</parent>
@@ -39,19 +39,19 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 	<dependencies>
 		<!-- GRyCAP common utilities -->
 		<dependency>
-			<groupId>org.grycap.coreutils</groupId>
+			<groupId>es.upv.grycap.coreutils</groupId>
 			<artifactId>coreutils-common</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.grycap.coreutils</groupId>
+			<groupId>es.upv.grycap.coreutils</groupId>
 			<artifactId>coreutils-logging</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.grycap.coreutils</groupId>
+			<groupId>es.upv.grycap.coreutils</groupId>
 			<artifactId>coreutils-fiber</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.grycap.coreutils</groupId>
+			<groupId>es.upv.grycap.coreutils</groupId>
 			<artifactId>coreutils-test</artifactId>
 			<scope>test</scope>
 		</dependency>

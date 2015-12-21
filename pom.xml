@@ -25,7 +25,7 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	
-	<groupId>org.grycap.opengateway</groupId>
+	<groupId>es.upv.grycap.opengateway</groupId>
 	<artifactId>opengateway</artifactId>
 	<version>0.0.1</version>
 	<packaging>pom</packaging>
@@ -74,8 +74,8 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 		<!-- Convenience properties to set library versions -->
 		<com.google.code.gson.version>2.5</com.google.code.gson.version>
 		<io.vertx.version>3.2.0</io.vertx.version>
-		<org.grycap.coreutils.version>0.1.0</org.grycap.coreutils.version>
-		<org.grycap.opengateway.version>${project.version}</org.grycap.opengateway.version>
+		<es.upv.grycap.coreutils.version>0.1.0</es.upv.grycap.coreutils.version>
+		<es.upv.grycap.opengateway.version>${project.version}</es.upv.grycap.opengateway.version>
 		<org.mock-server.version>3.10.2</org.mock-server.version>
 		
 		<!-- Convenience properties to set Maven plugins versions -->		
@@ -92,24 +92,24 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 		<dependencies>
 			<!-- GRyCAP common utilities -->
 			<dependency>
-				<groupId>org.grycap.coreutils</groupId>
+				<groupId>es.upv.grycap.coreutils</groupId>
 				<artifactId>coreutils-common</artifactId>
-				<version>${org.grycap.coreutils.version}</version>
+				<version>${es.upv.grycap.coreutils.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.grycap.coreutils</groupId>
+				<groupId>es.upv.grycap.coreutils</groupId>
 				<artifactId>coreutils-logging</artifactId>
-				<version>${org.grycap.coreutils.version}</version>
+				<version>${es.upv.grycap.coreutils.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.grycap.coreutils</groupId>
+				<groupId>es.upv.grycap.coreutils</groupId>
 				<artifactId>coreutils-fiber</artifactId>
-				<version>${org.grycap.coreutils.version}</version>
+				<version>${es.upv.grycap.coreutils.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.grycap.coreutils</groupId>
+				<groupId>es.upv.grycap.coreutils</groupId>
 				<artifactId>coreutils-test</artifactId>
-				<version>${org.grycap.coreutils.version}</version>
+				<version>${es.upv.grycap.coreutils.version}</version>
 			</dependency>
 		
 			<!-- Apache Commons: Collection of open source reusable Java components -->
@@ -248,7 +248,7 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 						<includes>
 							<include>**/*Test.java</include>
 						</includes>
-						<excludedGroups>org.grycap.coreutils.test.category.IntegrationTests</excludedGroups>						
+						<excludedGroups>es.upv.grycap.coreutils.test.category.IntegrationTests</excludedGroups>						
 					</configuration>
 				</plugin>
 				<!-- Maven Failsafe Plugin -->
@@ -276,7 +276,7 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 						<includes>
 							<include>**/*Test.java</include>
 						</includes>
-						<groups>org.grycap.coreutils.test.category.IntegrationTests</groups>
+						<groups>es.upv.grycap.coreutils.test.category.IntegrationTests</groups>
 					</configuration>
 				</plugin>
 				<!-- Cobertura: creates code coverage reports -->

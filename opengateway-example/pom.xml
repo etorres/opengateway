@@ -26,7 +26,7 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 	<modelVersion>4.0.0</modelVersion>
 	
 	<parent>
-		<groupId>org.grycap.opengateway</groupId>
+		<groupId>es.upv.grycap.opengateway</groupId>
 		<artifactId>opengateway</artifactId>
 		<version>0.0.1</version>
 	</parent>
@@ -39,16 +39,16 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 	<dependencies>
 		<!-- GRyCAP common utilities -->
 		<dependency>
-			<groupId>org.grycap.coreutils</groupId>
+			<groupId>es.upv.grycap.coreutils</groupId>
 			<artifactId>coreutils-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		
 		<!-- GRyCAP open gateway -->
 		<dependency>
-			<groupId>org.grycap.opengateway</groupId>
+			<groupId>es.upv.grycap.opengateway</groupId>
 			<artifactId>opengateway-core</artifactId>
-			<version>${org.grycap.opengateway.version}</version>
+			<version>${es.upv.grycap.opengateway.version}</version>
 		</dependency>
 		
 		<!-- Vert.x -->
@@ -176,7 +176,7 @@ that you distribute must include a readable copy of the "NOTICE" text file.
                 <groupId>org.mock-server</groupId>
                 <artifactId>mockserver-maven-plugin</artifactId>
                 <configuration>
-                	<initializationClass>org.grycap.opengateway.example.test.mockserver.OgExpectationInitializer</initializationClass>
+                	<initializationClass>es.upv.grycap.opengateway.example.test.mockserver.OgExpectationInitializer</initializationClass>
                 </configuration>
             </plugin>
 			<!-- Maven Surefire Plugin -->
@@ -203,7 +203,7 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 						<configuration>
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>org.grycap.opengateway.example.AppDaemon</mainClass>
+									<mainClass>es.upv.grycap.opengateway.example.AppDaemon</mainClass>
 									<manifestEntries>
 										<X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
 										<X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>

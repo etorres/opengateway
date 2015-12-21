@@ -35,7 +35,7 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 		</encoder>
 	</appender>
 
-	<logger name="org.grycap.opengateway" level="TRACE" />
+	<logger name="es.upv.grycap.opengateway" level="TRACE" />
 
 	<root level="INFO">
 		<appender-ref ref="FILE" />
