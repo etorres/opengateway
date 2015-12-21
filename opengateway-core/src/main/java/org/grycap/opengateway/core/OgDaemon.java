@@ -108,7 +108,7 @@ public abstract class OgDaemon implements Daemon {
 			@Override
 			public void healthy() {
 				final double startupTime = serviceManager.startupTimes().entrySet().stream().mapToDouble(Map.Entry::getValue).sum();
-				logger.info(new StringBuffer("Services started in: ").append((long)startupTime/1000l).append(" seconds.").toString());
+				logger.info(String.format("Services started in: %d seconds.", (long)startupTime/1000l));
 			}
 		});
 		serviceManager.startAsync();
@@ -191,7 +191,7 @@ public abstract class OgDaemon implements Daemon {
 		if (cmd.hasOption(ARGS_CONFIG_OPT[0])) {
 			try {
 				confname = cmd.getOptionValue(ARGS_CONFIG_OPT[0]);
-				checkArgument(isNotBlank(confname), new StringBuffer("Parameter ").append(ARGS_DIR_PROP).append(" is expected.").toString());				
+				checkArgument(isNotBlank(confname), String.format("Parameter %s is expected.", ARGS_DIR_PROP));				
 			} catch (Exception e) {
 				logger.error("Configuration load failed.", e);
 				System.exit(1);

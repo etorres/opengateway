@@ -34,9 +34,11 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.number.OrderingComparison.greaterThan;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -46,7 +48,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.daemon.DaemonContext;
 import org.apache.commons.daemon.DaemonController;
-import org.apache.http.client.utils.URIBuilder;
 import org.grycap.coreutils.test.category.IntegrationTests;
 import org.grycap.coreutils.test.rules.TestPrinter;
 import org.grycap.coreutils.test.rules.TestWatcher2;
@@ -64,15 +65,15 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.Headers;
+import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
-import io.vertx.ext.unit.junit.VertxUnitRunnerWithParametersFactory;
 import net.jodah.concurrentunit.Waiter;
 
 /**
@@ -81,7 +82,6 @@ import net.jodah.concurrentunit.Waiter;
  * @since 0.0.1
  */
 @RunWith(Parameterized.class)
-@UseParametersRunnerFactory(VertxUnitRunnerWithParametersFactory.class)
 @Category(IntegrationTests.class)
 public class AppDaemonTest {
 
@@ -102,10 +102,10 @@ public class AppDaemonTest {
 	@Parameters(name = "{index}: method={0}, path={1}, code={2}, ids={3}")
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			/* 0*/ // { "GET", "simple-rest/v1/products", 200, of("P001", "P002", "P003", "P004", "P005") }, 
+			/* 0*/ { "GET", "simple-rest/v1/products", 200, of("P001", "P002", "P003", "P004", "P005") }, 
 			/* 1*/ { "GET", "simple-rest/v1/shipping", 200, of("S001", "S002", "S003") }, 
-			/* 2*/ //{ "GET", "simple-rest/v1/products", 200, null },
-			/* 3*/ //{ "GET", "simple-rest/v1/shipping", 200, null }
+			/* 2*/ { "GET", "simple-rest/v1/products", 200, null },
+			/* 3*/ { "GET", "simple-rest/v1/shipping", 200, null }
 		});
 	}
 
@@ -160,9 +160,6 @@ public class AppDaemonTest {
 
 	@Test
 	public void testResources() throws Exception {
-
-		// TODO Thread.sleep(120000l);
-
 		final Waiter waiter = new Waiter();
 		int count = 1;
 		if ("GET".equals(method)) {
@@ -180,8 +177,11 @@ public class AppDaemonTest {
 	}
 
 	private void testGetObject(final String id, final Waiter waiter) throws URISyntaxException, MalformedURLException {
-		final URIBuilder uriBuilder = new URIBuilder(String.format("%s/%s/%s", uri, path, id));
-		getHttp2Client().asyncGet(uriBuilder.build().toURL().toString(), newArrayList("application/json"), false, new Callback() {			
+		final OkHttpClient client = new OkHttpClient();
+		final Request.Builder requestBuilder = new Request.Builder()
+				.url(String.format("%s/%s/%s", uri, path, id))
+				.addHeader("Accept", "application/json");
+		client.newCall(requestBuilder.build()).enqueue(new Callback() {			
 			@Override
 			public void onResponse(final Response response) throws IOException {
 				waiter.assertTrue(response.isSuccessful());
@@ -194,7 +194,7 @@ public class AppDaemonTest {
 				waiter.assertThat(response.body().contentLength(), greaterThan(0l));
 				final String payload = response.body().source().readUtf8();
 				waiter.assertThat(payload, allOf(notNullValue(), not(equalTo(""))));
-				pw.println(" >> Abbreviated response: " + abbreviate(payload, 64));
+				pw.println(" >> Abbreviated response: " + abbreviate(payload, 32));
 				// parse and check
 				final Gson gson = new Gson();
 				if (path.contains("products")) {
@@ -207,7 +207,7 @@ public class AppDaemonTest {
 					waiter.assertNotNull(shipping);
 					waiter.assertThat(shipping, allOf(notNullValue(), equalTo(getShipping().get(id))));
 					pw.println(" >> Object response: " + shipping);
-				}				
+				}
 				waiter.resume();
 			}
 			@Override
@@ -218,7 +218,46 @@ public class AppDaemonTest {
 	}
 
 	private void testGetList(final Waiter waiter) {
-		// TODO getProducts().values()
+		final OkHttpClient client = new OkHttpClient();
+		final Request.Builder requestBuilder = new Request.Builder()
+				.url(String.format("%s/%s", uri, path))
+				.addHeader("Accept", "application/json");
+		client.newCall(requestBuilder.build()).enqueue(new Callback() {			
+			@Override
+			public void onResponse(final Response response) throws IOException {
+				waiter.assertTrue(response.isSuccessful());
+				// check response headers
+				final Headers headers = response.headers();
+				waiter.assertNotNull(headers);
+				waiter.assertNotNull(headers.names());
+				waiter.assertThat(headers.names().size(), greaterThan(0));
+				// check response body
+				waiter.assertThat(response.body().contentLength(), greaterThan(0l));
+				final String payload = response.body().source().readUtf8();
+				waiter.assertThat(payload, allOf(notNullValue(), not(equalTo(""))));
+				pw.println(" >> Abbreviated response: " + abbreviate(payload, 32));
+				// parse and check
+				final Gson gson = new Gson();
+				if (path.contains("products")) {				
+					final Type collectionType = new TypeToken<List<Product>>(){}.getType();
+					final List<Product> products = gson.fromJson(payload, collectionType);					
+					waiter.assertNotNull(products);
+					waiter.assertThat(products, allOf(notNullValue(), containsInAnyOrder(getProducts().values().toArray())));
+					pw.println(" >> Object response: " + products);
+				} else if (path.contains("shipping")) {
+					final Type collectionType = new TypeToken<List<Shipping>>(){}.getType();
+					final List<Shipping> shipping = gson.fromJson(payload, collectionType);					
+					waiter.assertNotNull(shipping);
+					waiter.assertThat(shipping, allOf(notNullValue(), containsInAnyOrder(getShipping().values().toArray())));
+					pw.println(" >> Object response: " + shipping);
+				}
+				waiter.resume();
+			}
+			@Override
+			public void onFailure(final Request request, final IOException throwable) {
+				waiter.fail(throwable);
+			}
+		});
 	}
 
 }
