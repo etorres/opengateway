@@ -24,7 +24,7 @@
 package es.upv.grycap.opengateway.core.http;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static es.upv.grycap.coreutils.fiber.http.Http2Client.getHttp2Client;
+import static es.upv.grycap.coreutils.fiber.http.Http2Clients.http2Client;
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 
@@ -84,7 +84,7 @@ public class VertxHttp2Client {
 	 * @param resultHandler - is called back when the response is readable
 	 */
 	public void asyncGet(final String url, final @Nullable List<String> acceptableMediaTypes, final boolean nocache, final Handler<AsyncResult<HttpResponse>> resultHandler) {
-		getHttp2Client().asyncGet(url, acceptableMediaTypes, nocache, wrapCallback(resultHandler));
+		http2Client().asyncGet(url, acceptableMediaTypes, nocache, wrapCallback(resultHandler));
 	}
 
 	/**
@@ -95,7 +95,7 @@ public class VertxHttp2Client {
 	 * @param resultHandler - is called back when the response is readable
 	 */
 	public void asyncPost(final String url, final String mediaType, final Supplier<String> supplier, final Handler<AsyncResult<HttpResponse>> resultHandler) {
-		getHttp2Client().asyncPost(url, mediaType, supplier, wrapCallback(resultHandler));
+		http2Client().asyncPost(url, mediaType, supplier, wrapCallback(resultHandler));
 	}
 
 	/**
@@ -106,7 +106,7 @@ public class VertxHttp2Client {
 	 * @param resultHandler - is called back when the response is readable
 	 */
 	public void asyncPostBytes(final String url, final String mediaType, final Supplier<byte[]> supplier, final Handler<AsyncResult<HttpResponse>> resultHandler) {
-		getHttp2Client().asyncPostBytes(url, mediaType, supplier, wrapCallback(resultHandler));
+		http2Client().asyncPostBytes(url, mediaType, supplier, wrapCallback(resultHandler));
 	}
 
 	/**
@@ -117,7 +117,7 @@ public class VertxHttp2Client {
 	 * @param resultHandler - is called back when the response is readable
 	 */
 	public void asyncPut(final String url, final String mediaType, final Supplier<String> supplier, final Handler<AsyncResult<HttpResponse>> resultHandler) {
-		getHttp2Client().asyncPut(url, mediaType, supplier, wrapCallback(resultHandler));
+		http2Client().asyncPut(url, mediaType, supplier, wrapCallback(resultHandler));
 	}
 
 	/**
@@ -128,7 +128,7 @@ public class VertxHttp2Client {
 	 * @param resultHandler - is called back when the response is readable
 	 */
 	public void asyncPutBytes(final String url, final String mediaType, final Supplier<byte[]> supplier, final Handler<AsyncResult<HttpResponse>> resultHandler) {
-		getHttp2Client().asyncPutBytes(url, mediaType, supplier, wrapCallback(resultHandler));
+		http2Client().asyncPutBytes(url, mediaType, supplier, wrapCallback(resultHandler));
 	}
 
 	/**
@@ -137,7 +137,7 @@ public class VertxHttp2Client {
 	 * @param resultHandler - is called back when the response is readable
 	 */
 	public void asyncDelete(final String url, final Handler<AsyncResult<HttpResponse>> resultHandler) {
-		getHttp2Client().asyncDelete(url, wrapCallback(resultHandler));
+		http2Client().asyncDelete(url, wrapCallback(resultHandler));
 	}
 
 	private Callback wrapCallback(final Handler<AsyncResult<HttpResponse>> resultHandler) {

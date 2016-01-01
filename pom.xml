@@ -74,7 +74,7 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 		<!-- Convenience properties to set library versions -->
 		<com.google.code.gson.version>2.5</com.google.code.gson.version>
 		<io.vertx.version>3.2.0</io.vertx.version>
-		<es.upv.grycap.coreutils.version>0.1.0</es.upv.grycap.coreutils.version>
+		<es.upv.grycap.coreutils.version>0.2.0</es.upv.grycap.coreutils.version>
 		<es.upv.grycap.opengateway.version>${project.version}</es.upv.grycap.opengateway.version>
 		<org.mock-server.version>3.10.2</org.mock-server.version>
 		
@@ -310,6 +310,6 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 	
 	<modules>
 		<module>opengateway-core</module>
-		<module>opengateway-example</module>
+		<module>opengateway-examples</module>
 	</modules>
 </project>
