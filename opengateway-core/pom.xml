@@ -66,12 +66,6 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 			<artifactId>commons-daemon</artifactId>
 		</dependency>
 		
-		<!-- Guava: Google Core Libraries for Java -->
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-		</dependency>
-		
 		<!-- Vert.x -->
 		<dependency>
 			<groupId>io.vertx</groupId>

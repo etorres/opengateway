@@ -51,7 +51,7 @@ import com.google.common.util.concurrent.ServiceManager;
 import com.google.common.util.concurrent.ServiceManager.Listener;
 import com.typesafe.config.Config;
 
-import es.upv.grycap.coreutils.common.Configurer;
+import es.upv.grycap.coreutils.common.config.Configurer;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.json.JsonObject;

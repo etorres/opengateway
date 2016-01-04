@@ -124,13 +124,6 @@ that you distribute must include a readable copy of the "NOTICE" text file.
 				<version>1.0.15</version>
 			</dependency>
 			
-			<!-- Google Guava core libraries for Java -->
-			<dependency>
-				<groupId>com.google.guava</groupId>
-				<artifactId>guava</artifactId>
-				<version>19.0</version>
-			</dependency>
-			
 			<!-- Google Gson library -->
 			<dependency>
 				<groupId>com.google.code.gson</groupId>
